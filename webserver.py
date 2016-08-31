@@ -10,9 +10,6 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-def query1():
-    result=session.query(Puppy.name).order_by(Puppy.name.asc()).all()
-    return result
 
 
 
@@ -25,15 +22,35 @@ class webserverHandler(BaseHTTPRequestHandler):
                 self.send_header('content-type','text/html')
                 self.end_headers()
 
-                results = session.query(Restaurant.name).all()
+                results = session.query(Restaurant).all()
                 print results
                 output=''
                 output += "<html><body><h1><a href='/restaurants/new'>Make A new Restaurant</a><br></h1><ul>"
                 for result in results:
-                    output += "<li>%s</li>"%result[0]
-                    output += "<a href='/restaurants'>  EDIT </a><br>"
-                    output += "<a href='/restaurants'>  Delete  </a>"
+                    output += "<li>%s</li>"%result.name
+                    output += "<a href='/restaurants/%s/edit'  name='id'>  EDIT </a><br>"% result.id
+                    output += "<a href='/restaurants/%s/delete'>  Delete  </a>"%result.id
                 output += "</ul></html></body>"
+                self.wfile.write(output)
+                print output
+                return
+            if self.path.endswith("/delete"):
+                self.send_response(200)
+                self.send_header('content-type', 'text/html')
+                self.end_headers()
+
+                item_id=self.path.split("/")[2]
+
+                results = session.query(Restaurant).filter_by(id=item_id).one()
+                print results
+                output = ''
+                output += "<html><body><h1><a href='/restaurants/new'>Are you sure to delete ?</a><br></h1><ul>"
+                output += "<li>%s</li>" % results.name
+                output += "</ul></html></body>"
+                output += '''<form method='POST' enctype='multipart/form-data'
+                    action='http://127.0.0.1:8080/restaurants/%s/delete'>
+                     <input type="submit" value="DELETE">
+                     </form>'''%item_id
                 self.wfile.write(output)
                 print output
                 return
@@ -53,6 +70,26 @@ class webserverHandler(BaseHTTPRequestHandler):
                 self.wfile.write(output)
                 print output
                 return
+
+            if self.path.endswith('/edit'):
+                restaurant_id=self.path.split('/')[2]
+                query=session.query(Restaurant).filter_by(id = restaurant_id).one()
+                if query != []:
+                    self.send_response(200)
+                    self.send_header('content-type', 'text/html')
+                    self.end_headers()
+
+                    output = ''
+                    output += "<html><body><h1>Edit an Item  %s <br></h1>"%query.name
+                    output += '''<form method='POST' enctype='multipart/form-data'
+                        action='http://127.0.0.1:8080/restaurants/%s/edit'>
+                        <input name="message" type="text" >
+                        <input type="submit" value="Rename">
+                         </form>'''%restaurant_id
+                    output += "</html></body>"
+                    self.wfile.write(output)
+                    print output
+                    return
 
             if self.path.endswith("/hola"):
                 self.send_response(200)
@@ -78,6 +115,42 @@ class webserverHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
+            if self.path.endswith('/edit'):
+
+                ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+                if ctype == 'multipart/form-data':
+                    fields = cgi.parse_multipart(self.rfile, pdict)
+                    messageData = fields.get('message')
+                item_id=self.path.split('/')[2]
+                print messageData
+
+                myquery=session.query(Restaurant).filter_by(id=item_id).one()
+                myquery.name=messageData[0]
+                session.add(myquery)
+                session.commit()
+
+                self.send_response(301)
+                self.send_header('content-type', 'text/html')
+                self.send_header('location', '/restaurants')
+                self.end_headers()
+
+            if self.path.endswith('/delete'):
+                ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+                if ctype == 'multipart/form-data':
+                    fields = cgi.parse_multipart(self.rfile, pdict)
+                    messageData = fields.get('message')
+                item_id = self.path.split('/')[2]
+                print messageData
+
+                myquery = session.query(Restaurant).filter_by(id=item_id).one()
+                session.delete(myquery)
+                session.commit()
+
+                self.send_response(301)
+                self.send_header('content-type', 'text/html')
+                self.send_header('location', '/restaurants')
+                self.end_headers()
+
             if self.path.endswith('/restaurants/new'):
 
                 ctype,pdict=cgi.parse_header(self.headers.getheader('content-type'))
