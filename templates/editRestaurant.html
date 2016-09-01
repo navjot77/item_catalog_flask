@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>edit restaurant </title>
+</head>
+<body>
+        <p>EDIT NAME OF RESTAURANT:</p>
+       <form action="{{ url_for('editRestaurant',restaurant_id=restaurant_id)}}" method = 'post'>
+        <input type="text" value="{{restaurant.name}}" name="name">
+        <input type="submit" value="SUBMIT">
+        </form>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>delete restaurant </title>
+</head>
+<body>
+        <p>Delete RESTAURANT ? :</p>
+        <form action="{{ url_for('deleteRestaurant',restaurant_id=restaurant_id)}}" method="POST">
+        <h2>{{restaurant.name}}</h2>
+        <input type="submit" value="SUBMIT">
+        </form>
+
+</body>
+</html>
